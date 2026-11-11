@@ -132,7 +132,6 @@ static void mostrarPorUnidad(const struct Nodo *nodos, int cantidad, const char 
 
 int main(void)
 {
-    struct Nodo nodos[MAX_NODOS];
     int iniciales;
     int cantidad = 0;
 
@@ -140,9 +139,16 @@ int main(void)
         return EXIT_SUCCESS;
     }
 
+    struct Nodo *nodos = malloc(iniciales * sizeof *nodos);
+    if (nodos == NULL) {
+        fputs("No se pudo reservar memoria para los nodos.\n", stderr);
+        return EXIT_FAILURE;
+    }
+
     while (cantidad < iniciales) {
         printf("\nNodo %d de %d\n", cantidad + 1, iniciales);
         if (!cargarNodo(nodos, cantidad, &nodos[cantidad])) {
+            free(nodos);
             return EXIT_SUCCESS;
         }
         cantidad++;
@@ -157,12 +163,25 @@ int main(void)
         if (opcion == 1) {
             if (cantidad == MAX_NODOS) {
                 puts("Se alcanzo el limite de 124 nodos.");
-            } else if (cargarNodo(nodos, cantidad, &nodos[cantidad])) {
-                cantidad++;
-                puts("Nodo agregado.");
-            } else {
+                continue;
+            }
+
+            struct Nodo nuevo;
+            if (!cargarNodo(nodos, cantidad, &nuevo)) {
                 break;
             }
+
+            /* Conserva el arreglo original si falla la ampliación. */
+            struct Nodo *ampliado = realloc(nodos, (cantidad + 1) * sizeof *nodos);
+            if (ampliado == NULL) {
+                fputs("No se pudo agregar el nodo por falta de memoria.\n", stderr);
+                continue;
+            }
+
+            nodos = ampliado;
+            nodos[cantidad] = nuevo;
+            cantidad++;
+            puts("Nodo agregado.");
         } else if (opcion == 2) {
             char unidad[TAM_UNIDAD];
             if (!leerUnidad("Unidad a buscar: ", unidad)) {
@@ -172,5 +191,6 @@ int main(void)
         }
     } while (opcion != 3);
 
+    free(nodos);
     return EXIT_SUCCESS;
 }
