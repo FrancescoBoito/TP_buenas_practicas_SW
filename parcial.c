@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -66,8 +67,18 @@ static int leerUnidad(const char *mensaje, char *unidad)
 {
     char linea[TAM_LINEA];
     while (leerLinea(mensaje, linea, sizeof linea)) {
-        if (linea[0] != '\0' && strlen(linea) < TAM_UNIDAD) {
-            strcpy(unidad, linea);
+        char *inicio = linea + strspn(linea, " \t\r");
+        size_t largo = strlen(inicio);
+        while (largo > 0 && isspace((unsigned char)inicio[largo - 1])) {
+            largo--;
+        }
+
+        /* Guarda y busca con el mismo criterio de espacios y mayúsculas. */
+        if (largo > 0 && largo < TAM_UNIDAD) {
+            for (size_t i = 0; i < largo; i++) {
+                unidad[i] = (char)toupper((unsigned char)inicio[i]);
+            }
+            unidad[largo] = '\0';
             return 1;
         }
         printf("Ingrese una unidad de 1 a %d caracteres.\n", TAM_UNIDAD - 1);
